@@ -180,10 +180,8 @@ function MainContent({ selectedModel, models, updateModelWithBenchmark }) {
           </Typography>
           <Box 
             sx={{ 
-              width: 80, 
-              height: 80, 
-              borderRadius: '50%', 
-              bgcolor: alpha(theme.palette.secondary.main, 0.2),
+              width: 120, 
+              height: 120, 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -192,11 +190,10 @@ function MainContent({ selectedModel, models, updateModelWithBenchmark }) {
               mt: 4
             }}
           >
-            <Settings 
-              sx={{ 
-                fontSize: 40, 
-                color: theme.palette.secondary.main 
-              }} 
+            <img 
+              src={process.env.PUBLIC_URL + "/logo512.png"} 
+              alt="Logo" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </Box>
         </Box>

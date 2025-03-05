@@ -17,6 +17,8 @@ import {
 import { Edit, Check, Close, Add } from '@mui/icons-material';
 import NewModelForm from './NewModelForm';
 
+const drawerWidth = 260; // Default drawer width
+
 function Sidebar({ width, selectedModel, onModelSelect, models, setModels }) {
   const [isNewModelDialogOpen, setNewModelDialogOpen] = useState(false);
   const [editingModelId, setEditingModelId] = useState(null);
@@ -127,25 +129,18 @@ function Sidebar({ width, selectedModel, onModelSelect, models, setModels }) {
 
   return (
     <>
-      <Drawer
-        variant="permanent"
+      <Box
         sx={{
-          width: width,
+          width: width || drawerWidth,
           flexShrink: 0,
-          '& .MuiDrawer-paper': { 
-            width: width, 
-            boxSizing: 'border-box',
-            position: 'static',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 0,
-            boxShadow: 'none',
-            bgcolor: alpha('#3d1e2f', 0.02),
-          },
+          bgcolor: alpha('#3d1e2f', 0.02),
+          height: '100%',
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        <Toolbar />
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 2, pt: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
             Models
           </Typography>
@@ -247,7 +242,7 @@ function Sidebar({ width, selectedModel, onModelSelect, models, setModels }) {
             </Button>
           </Box>
         </Box>
-      </Drawer>
+      </Box>
 
       <NewModelForm
         open={isNewModelDialogOpen}

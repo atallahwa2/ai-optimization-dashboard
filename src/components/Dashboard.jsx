@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Box, CssBaseline, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, CssBaseline, AppBar, Toolbar, Typography, Paper, ThemeProvider, createTheme, alpha, Container } from '@mui/material';
 import Sidebar from './Sidebar';
 import MainContent from './MainContent';
+import NewModelForm from './NewModelForm';
+import BenchmarkReportGenerator from './BenchmarkReportGenerator';
 
 // Custom theme with company colors
 const theme = createTheme({
@@ -165,6 +167,8 @@ function Dashboard() {
     }
   ]);
 
+  const [modelFormOpen, setModelFormOpen] = useState(false);
+
   // Add a function to update models with benchmark results
   const updateModelWithBenchmark = (modelId, benchmarkResults) => {
     setModels(models.map(model => {
@@ -179,74 +183,121 @@ function Dashboard() {
     }));
   };
 
+  const handleModelSelect = (model) => {
+    setSelectedModel(model);
+  };
+
+  const handleAddModel = (newModel) => {
+    setModels([...models, newModel]);
+    setSelectedModel(newModel);
+    setModelFormOpen(false);
+  };
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, 'rgba(224, 252, 0, 0.03)');
+      gradient.addColorStop(1, 'rgba(61, 30, 47, 0.02)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
-      <Box 
-        sx={{ 
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          minHeight: '100vh',
-          bgcolor: 'background.default',
-          p: 3,
-          backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(224, 252, 0, 0.03) 0%, rgba(61, 30, 47, 0.02) 90%)',
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            display: 'flex',
-            width: '95%',
-            maxWidth: '1800px',
-            height: 'calc(100vh - 48px)', // 48px accounts for the padding
-            overflow: 'hidden',
-            borderRadius: 4,
-            position: 'relative',
-            backdropFilter: 'blur(8px)',
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
+        <CssBaseline />
+        
+        {/* Background Canvas */}
+        <canvas 
+          ref={canvasRef} 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: -1,
+            opacity: 0.8
+          }}
+        />
+        
+        <AppBar 
+          position="fixed" 
+          sx={{ 
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
           }}
         >
-          <CssBaseline />
-          <AppBar 
-            position="absolute" 
-            elevation={0}
+          <Toolbar>
+            <Typography variant="h6" noWrap component="div" color="primary" sx={{ fontWeight: 600 }}>
+              AI Model Optimization Dashboard
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        
+        {/* Main content container */}
+        <Box sx={{ mt: '64px', display: 'flex', flexDirection: 'column', width: '100%', px: 3 }}>
+          {/* Dashboard with Sidebar */}
+          <Box sx={{ display: 'flex', width: '100%', border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2, overflow: 'hidden', mt: 2 }}>
+            {/* Sidebar */}
+            <Sidebar 
+              models={models} 
+              selectedModel={selectedModel?.id}
+              onModelSelect={handleModelSelect}
+              onAddModelClick={() => setModelFormOpen(true)}
+              width={drawerWidth}
+              setModels={setModels}
+            />
+            
+            {/* Dashboard Content */}
+            <Box 
+              component="main" 
+              sx={{ 
+                flexGrow: 1, 
+                p: 3, 
+                width: { sm: `calc(100% - ${drawerWidth}px)` },
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: '1px solid',
+                borderColor: alpha(theme.palette.primary.main, 0.1)
+              }}
+            >
+              <MainContent 
+                selectedModel={selectedModel} 
+                models={models}
+                updateModelWithBenchmark={updateModelWithBenchmark}
+              />
+            </Box>
+          </Box>
+          
+          {/* Benchmark Report Generator - Full Width */}
+          <Box 
             sx={{ 
-              zIndex: (theme) => theme.zIndex.drawer + 1,
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              background: 'linear-gradient(90deg, #3d1e2f 0%, #4d2e3f 100%)',
+              width: '100%',
+              mt: 5,
+              pb: 5,
+              pt: 3
             }}
           >
-            <Toolbar sx={{ justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box 
-                  sx={{ 
-                    width: 24, 
-                    height: 24, 
-                    borderRadius: '50%', 
-                    bgcolor: 'secondary.main',
-                    mr: 2,
-                    boxShadow: '0 0 10px rgba(224, 252, 0, 0.5)'
-                  }} 
-                />
-                <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-                  AI Optimization Dashboard
-                </Typography>
-              </Box>
-            </Toolbar>
-          </AppBar>
-          <Sidebar 
-            width={drawerWidth} 
-            selectedModel={selectedModel}
-            onModelSelect={setSelectedModel}
-            models={models}
-            setModels={setModels}
-          />
-          <MainContent 
-            selectedModel={selectedModel}
-            models={models}
-            updateModelWithBenchmark={updateModelWithBenchmark}
-          />
-        </Paper>
+            <Typography variant="h6" color="primary" sx={{ mb: 3, fontWeight: 600, pl: 1 }}>
+              Benchmark and TCO Report Generator
+            </Typography>
+            <BenchmarkReportGenerator />
+          </Box>
+        </Box>
+        
+        <NewModelForm
+          open={modelFormOpen}
+          onClose={() => setModelFormOpen(false)}
+          onSubmit={handleAddModel}
+        />
       </Box>
     </ThemeProvider>
   );
