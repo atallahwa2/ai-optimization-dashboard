@@ -42,7 +42,7 @@ import {
   Bolt
 } from '@mui/icons-material';
 
-const steps = ['Model Settings', 'Advanced Configuration', 'Confirmation'];
+const steps = ['Model Link', 'Hardware & Settings', 'Confirmation'];
 
 const gpuOptions = [
   { value: 'auto', label: 'Auto-select optimal hardware' },
@@ -88,9 +88,9 @@ function NewModelForm({ open, onClose, onSubmit }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [formData, setFormData] = useState({
     modelLink: '',
-    gpuType: 'A100',
+    gpuType: 'auto',
     gpuCount: 1,
-    autoSelectHardware: false,
+    autoSelectHardware: true,
     hardwareOptimization: 'performance', // 'performance' or 'costEfficiency'
     optimizationTarget: 'Throughput', // Default to Throughput optimization
     optimizationMode: 'general', // 'general' or 'dataset'
@@ -103,21 +103,13 @@ function NewModelForm({ open, onClose, onSubmit }) {
     if (activeStep === steps.length - 1) {
       onSubmit(formData);
       handleClose();
-    } else if (activeStep === 0 && !showAdvanced) {
-      // Skip the advanced configuration step if user hasn't toggled advanced settings
-      setActiveStep(2); // Go directly to confirmation
     } else {
       setActiveStep((prev) => prev + 1);
     }
   };
 
   const handleBack = () => {
-    if (activeStep === 2 && !showAdvanced) {
-      // If we're at confirmation and skipped advanced, go back to basic settings
-      setActiveStep(0);
-    } else {
-      setActiveStep((prev) => prev - 1);
-    }
+    setActiveStep((prev) => prev - 1);
   };
 
   const handleClose = () => {
@@ -125,9 +117,9 @@ function NewModelForm({ open, onClose, onSubmit }) {
     setShowAdvanced(false);
     setFormData({
       modelLink: '',
-      gpuType: 'A100',
+      gpuType: 'auto',
       gpuCount: 1,
-      autoSelectHardware: false,
+      autoSelectHardware: true,
       hardwareOptimization: 'performance',
       optimizationTarget: 'Throughput',
       optimizationMode: 'general',
@@ -189,12 +181,11 @@ function NewModelForm({ open, onClose, onSubmit }) {
   const isStepValid = () => {
     switch (activeStep) {
       case 0:
-        // Basic validation - just need model link and hardware selection
-        return formData.modelLink.trim() !== '' && 
-               (formData.autoSelectHardware || (formData.gpuType && formData.gpuCount > 0));
+        // Model link validation
+        return formData.modelLink.trim() !== '';
       case 1:
-        // Advanced settings validation
-        return true; // All advanced settings have defaults
+        // Hardware selection validation
+        return formData.autoSelectHardware || (formData.gpuType && formData.gpuCount > 0);
       case 2:
         return true; // Confirmation step is always valid
       default:
@@ -204,7 +195,7 @@ function NewModelForm({ open, onClose, onSubmit }) {
 
   const getStepContent = (step) => {
     switch (step) {
-      case 0: // Basic settings
+      case 0: // Step 1: Model Link
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
@@ -218,301 +209,165 @@ function NewModelForm({ open, onClose, onSubmit }) {
               fullWidth
               variant="outlined"
               placeholder="e.g., meta-llama/Llama-2-7b-chat-hf"
-              sx={{ mt: 1, mb: 3 }}
+              sx={{ mt: 1 }}
             />
-            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Enter the URL or repository name of the model you want to optimize
+            </Typography>
+          </Box>
+        );
+      
+      case 1: // Step 2: Hardware & Settings
+        return (
+          <Box sx={{ mt: 2 }}>
+            {/* Hardware Selection */}
             <Typography variant="subtitle1" gutterBottom>
               Select hardware
             </Typography>
             
-            <Box sx={{ mb: 2 }}>
-              <FormControl fullWidth sx={{ mb: 3 }}>
-                <InputLabel id="gpu-type-label">GPU Type</InputLabel>
-                <Select
-                  labelId="gpu-type-label"
-                  name="gpuType"
-                  value={formData.gpuType}
-                  onChange={handleChange}
-                  label="GPU Type"
-                >
-                  {gpuOptions.filter(gpu => gpu.value !== 'auto').map((gpu) => (
-                    <MenuItem key={gpu.value} value={gpu.value}>{gpu.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <Switch
+                  checked={formData.autoSelectHardware}
+                  onChange={handleAutoSelectHardwareChange}
+                  color="primary"
+                />
+                <Typography variant="body1" sx={{ ml: 1 }}>
+                  Auto-select optimal hardware (recommended)
+                </Typography>
+              </Box>
               
-              <FormControl fullWidth>
-                <InputLabel id="gpu-count-label">GPU Count</InputLabel>
-                <Select
-                  labelId="gpu-count-label"
-                  name="gpuCount"
-                  value={formData.gpuCount}
-                  onChange={handleChange}
-                  label="GPU Count"
-                >
-                  {[1, 2, 4, 8].map((count) => (
-                    <MenuItem key={count} value={count}>{count}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            
-            <Divider sx={{ my: 3 }} />
-            
-            <Box>
-              <Button
-                variant="text"
-                color="primary"
-                startIcon={<Settings />}
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                sx={{ mb: 1 }}
-              >
-                {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings"}
-              </Button>
-
-              {showAdvanced && (
-                <Box sx={{ 
-                  mt: 2, 
-                  p: 2, 
-                  bgcolor: alpha(theme.palette.primary.main, 0.03), 
-                  borderRadius: 2, 
-                  border: '1px solid',
-                  borderColor: alpha(theme.palette.primary.main, 0.1)
-                }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Optimization Target
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={formData.optimizationTarget}
-                    exclusive
-                    onChange={handleOptimizationTargetChange}
-                    aria-label="optimization target"
-                    fullWidth
-                    size="small"
-                    sx={{ mb: 2 }}
-                  >
-                    <ToggleButton value="Throughput" aria-label="throughput">
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Speed sx={{ mr: 1, fontSize: '1rem' }} />
-                        <Typography variant="body2">Throughput</Typography>
-                      </Box>
-                    </ToggleButton>
-                    <ToggleButton value="Latency" aria-label="latency">
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Timer sx={{ mr: 1, fontSize: '1rem' }} />
-                        <Typography variant="body2">Latency</Typography>
-                      </Box>
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                  
-                  <Typography variant="subtitle2" gutterBottom>
-                    Inference Engine
-                  </Typography>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="inference-engine-label">Inference Engine</InputLabel>
+              {!formData.autoSelectHardware ? (
+                <>
+                  <FormControl fullWidth sx={{ mb: 3 }}>
+                    <InputLabel id="gpu-type-label">GPU Type</InputLabel>
                     <Select
-                      labelId="inference-engine-label"
-                      name="inferenceEngine"
-                      value={formData.inferenceEngine}
+                      labelId="gpu-type-label"
+                      name="gpuType"
+                      value={formData.gpuType}
                       onChange={handleChange}
-                      label="Inference Engine"
+                      label="GPU Type"
                     >
-                      {inferenceEngineOptions.map((engine) => (
-                        <MenuItem key={engine.id} value={engine.id}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
-                              {React.cloneElement(engine.icon, { fontSize: 'small' })}
-                            </Box>
-                            <Typography variant="body2">{engine.name}</Typography>
-                          </Box>
-                        </MenuItem>
+                      {gpuOptions.filter(gpu => gpu.value !== 'auto').map((gpu) => (
+                        <MenuItem key={gpu.value} value={gpu.value}>{gpu.label}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
+                  
+                  <FormControl fullWidth>
+                    <InputLabel id="gpu-count-label">GPU Count</InputLabel>
+                    <Select
+                      labelId="gpu-count-label"
+                      name="gpuCount"
+                      value={formData.gpuCount}
+                      onChange={handleChange}
+                      label="GPU Count"
+                    >
+                      {[1, 2, 4, 8].map((count) => (
+                        <MenuItem key={count} value={count}>{count}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </>
+              ) : (
+                <Box sx={{ 
+                  p: 3, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.primary.main, 0.03),
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.1),
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  <Box sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                    color: theme.palette.secondary.main,
+                    mr: 2
+                  }}>
+                    <Bolt />
+                  </Box>
+                  <Box>
+                    <Typography variant="body1" fontWeight={500}>
+                      Performance-optimized hardware will be selected
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Our system will automatically choose the best hardware configuration for your model
+                    </Typography>
+                  </Box>
                 </Box>
               )}
             </Box>
-          </Box>
-        );
-      
-      case 1: // Advanced configuration
-        return (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Optimization Target
+            
+            {/* Advanced Settings Section */}
+            <Divider sx={{ my: 3 }} />
+            
+            <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+              <Settings sx={{ mr: 1, fontSize: '1.2rem' }} />
+              Advanced Settings (Optional)
             </Typography>
             
-            <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
-              <RadioGroup
-                name="optimizationMode"
-                value={formData.optimizationMode}
-                onChange={handleOptimizationModeChange}
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Optimization Target
+              </Typography>
+              <ToggleButtonGroup
+                value={formData.optimizationTarget}
+                exclusive
+                onChange={handleOptimizationTargetChange}
+                aria-label="optimization target"
+                fullWidth
+                size="small"
+                sx={{ mb: 3 }}
               >
-                <FormControlLabel 
-                  value="general" 
-                  control={<Radio />} 
-                  label="General optimization" 
-                />
-                <FormControlLabel 
-                  value="dataset" 
-                  control={<Radio />} 
-                  label="Dataset-specific optimization" 
-                />
-              </RadioGroup>
-            </FormControl>
-            
-            {formData.optimizationMode === 'general' ? (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Choose what to optimize for:
-                </Typography>
-                <ToggleButtonGroup
-                  value={formData.optimizationTarget}
-                  exclusive
-                  onChange={handleOptimizationTargetChange}
-                  aria-label="optimization target"
-                  fullWidth
-                  sx={{ mt: 1 }}
-                >
-                  <ToggleButton 
-                    value="Throughput" 
-                    aria-label="throughput"
-                    sx={{ 
-                      py: 2,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      '&.Mui-selected': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        color: theme.palette.primary.main,
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.15),
-                        }
-                      }
-                    }}
-                  >
-                    <Speed />
-                    <Typography variant="body2">Throughput</Typography>
-                  </ToggleButton>
-                  <ToggleButton 
-                    value="Latency" 
-                    aria-label="latency"
-                    sx={{ 
-                      py: 2,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      '&.Mui-selected': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        color: theme.palette.primary.main,
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.15),
-                        }
-                      }
-                    }}
-                  >
-                    <Timer />
-                    <Typography variant="body2">Latency</Typography>
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-            ) : (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Select a specific dataset to optimize for:
-                </Typography>
-                <FormControl fullWidth sx={{ mt: 1 }}>
-                  <InputLabel id="dataset-select-label">Dataset</InputLabel>
-                  <Select
-                    labelId="dataset-select-label"
-                    name="optimizationDataset"
-                    value={formData.optimizationDataset}
-                    onChange={handleChange}
-                    label="Dataset"
-                  >
-                    {datasetOptions.map((dataset) => (
-                      <MenuItem key={dataset.id} value={dataset.id}>
-                        <Box>
-                          <Typography variant="body2">{dataset.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {dataset.description}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-            
-            <Divider sx={{ my: 4 }} />
-            
-            <Typography variant="subtitle1" gutterBottom>
-              Inference Engine
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Choose the inference engine that will be used to serve your model.
-            </Typography>
-            
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {inferenceEngineOptions.map((engine) => (
-                <Paper
-                  key={engine.id}
-                  onClick={() => handleInferenceEngineSelect(engine.id)}
-                  sx={{ 
-                    p: 2, 
-                    cursor: 'pointer',
-                    border: '1px solid',
-                    borderColor: formData.inferenceEngine === engine.id 
-                      ? theme.palette.primary.main 
-                      : theme.palette.divider,
-                    bgcolor: formData.inferenceEngine === engine.id 
-                      ? alpha(theme.palette.primary.main, 0.05)
-                      : 'background.paper',
-                    '&:hover': {
-                      borderColor: theme.palette.primary.main,
-                      bgcolor: alpha(theme.palette.primary.main, 0.02)
-                    },
-                    borderRadius: 2,
-                    transition: 'all 0.2s'
-                  }}
-                >
+                <ToggleButton value="Throughput" aria-label="throughput">
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box 
-                      sx={{ 
-                        mr: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 40,
-                        height: 40,
-                        borderRadius: 2,
-                        bgcolor: formData.inferenceEngine === engine.id 
-                          ? alpha(theme.palette.primary.main, 0.1)
-                          : alpha(theme.palette.grey[500], 0.1),
-                        color: formData.inferenceEngine === engine.id 
-                          ? theme.palette.primary.main
-                          : theme.palette.grey[700],
-                      }}
-                    >
-                      {engine.icon}
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={500}>
-                        {engine.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {engine.description}
-                      </Typography>
-                    </Box>
+                    <Speed sx={{ mr: 1, fontSize: '1rem' }} />
+                    <Typography variant="body2">Throughput</Typography>
                   </Box>
-                </Paper>
-              ))}
+                </ToggleButton>
+                <ToggleButton value="Latency" aria-label="latency">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Timer sx={{ mr: 1, fontSize: '1rem' }} />
+                    <Typography variant="body2">Latency</Typography>
+                  </Box>
+                </ToggleButton>
+              </ToggleButtonGroup>
+              
+              <Typography variant="subtitle2" gutterBottom>
+                Inference Engine
+              </Typography>
+              <FormControl fullWidth size="small">
+                <InputLabel id="inference-engine-label">Inference Engine</InputLabel>
+                <Select
+                  labelId="inference-engine-label"
+                  name="inferenceEngine"
+                  value={formData.inferenceEngine}
+                  onChange={handleChange}
+                  label="Inference Engine"
+                >
+                  {inferenceEngineOptions.map((engine) => (
+                    <MenuItem key={engine.id} value={engine.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                          {engine.icon}
+                        </Box>
+                        <Typography variant="body2">{engine.name}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
           </Box>
         );
         
-      case 2: // Confirmation
+      case 2: // Step 3: Confirmation
         return (
           <Box sx={{ mt: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -520,7 +375,13 @@ function NewModelForm({ open, onClose, onSubmit }) {
             </Typography>
             <Box sx={{ pl: 2, borderLeft: '4px solid', borderColor: 'primary.main' }}>
               <p><strong>Model Link:</strong> {formData.modelLink}</p>
-              <p><strong>GPU Configuration:</strong> {formData.gpuType} × {formData.gpuCount}</p>
+              
+              {formData.autoSelectHardware ? (
+                <p><strong>Hardware:</strong> <em>Auto-select optimal hardware</em></p>
+              ) : (
+                <p><strong>GPU Configuration:</strong> {formData.gpuType} × {formData.gpuCount}</p>
+              )}
+              
               <p><strong>Optimization Target:</strong> {formData.optimizationTarget}</p>
               <p>
                 <strong>Inference Engine:</strong> {
